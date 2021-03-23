@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 import math
 import statistics
+from sklearn import preprocessing
 
 data= pd.read_csv("https://raw.githubusercontent.com/EQWorks/ws-data-spark/master/data/DataSample.csv")
 POI_List= pd.read_csv("https://raw.githubusercontent.com/EQWorks/ws-data-spark/master/data/POIList.csv")
@@ -110,26 +111,36 @@ for i in range(0,len(POI_List)):
 
 #-----------------PART 4A: MODEL ------------------#
 
-#standardization 
 
 #Latitude
-for i in range(0,len(POI_List)):
-  S_Lat= POI_Data.loc[POI_Data['POI Number']==i,'Latitude']
-  S_Long=POI_Data.loc[POI_Data['POI Number']==i,'Longitude']
+def model(i):
+  norm_Lat=POI_Data.loc[POI_Data['POI Number']==i,'Latitude']
+  norm_Long=POI_Data.loc[POI_Data['POI Number']==i,'Longitude']
 
-  S_lat_length=len(S_Lat)
-  S_long_length=len(S_Long)
+  x=np.interp(norm_Lat, (norm_Lat.min(),norm_Lat.max()), (-10,10))
+  x1=np.interp(norm_Long, (norm_Long.min(),norm_Long.max()), (-10,10))
+
+  z_lat=np.abs(stats.zscore(x))
+  z_long= np.abs(stats.zscore(x1))
+
+  noo_lat=np.where(z_lat<3)
+  noo_long=np.where(z_long<3)
   
-  if (S_lat_length>0 and S_lat_length>0 ):
-    SLat_mean=sum(S_Lat)/S_lat_length
-    SLong_mean=sum(S_Long)/S_long_length
+  Scaled_Data=pd.DataFrame(columns=['Scaled Latitude', 'Scaled Longitude'])
+  
+  for i in range (0,len(norm_Lat)):
+    if (z_lat[i]<3):
+      if (z_long[i] <3):
+        new_row=[x[i],x1[i]]
+        Scaled_Data.loc[len(Scaled_Data)]=new_row
 
-    SLat_sd=statistics.stdev(S_Lat)
-    SLong_sd=statistics.stdev(S_Long)
+  noo_lat= Scaled_Data['Scaled Latitude']
+  noo_long=Scaled_Data['Scaled Longitude']
+  
+  plt.scatter(x=noo_lat, y=noo_long)
+  plt.title('Scaled Data without Outliers')
 
-    stan_Lat=(S_Lat-SLat_mean)/SLat_sd
-    stan_Long=(S_Long-SLong_mean)/SLong_sd
-  else:
-    stan_Lat==0
-    stan_Long==0
-  plt.scatter(x=stan_Lat, y=stan_Long)
+model(0)
+model(1)
+model(2)
+model(3)
